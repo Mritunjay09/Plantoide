@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Leaf } from 'lucide-react';
+import { Leaf, UserPlus, LogIn } from 'lucide-react';
 
 export interface UserInfo {
   name: string;
   farmName: string;
   email: string;
+  id?: string;
 }
 
 interface LoginViewProps {
@@ -12,15 +13,46 @@ interface LoginViewProps {
 }
 
 export function LoginView({ onLogin }: LoginViewProps) {
+  const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
   const [farmName, setFarmName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [message, setMessage] = useState({ text: '', type: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password && name && farmName) {
-      onLogin({ name, farmName, email }); 
+    setMessage({ text: '', type: '' });
+
+    // Determine which endpoint to hit based on mode
+    const endpoint = isRegistering ? '/api/users/register' : '/api/users/login';
+    const payload = isRegistering 
+      ? { username: name, email, password, farmLocation: farmName } 
+      : { email, password };
+
+    try {
+      const response = await fetch(`http://localhost:5000${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (isRegistering) {
+          setMessage({ text: 'Registration successful! Please Log In.', type: 'success' });
+          setIsRegistering(false); // Switch to login mode automatically
+        } else {
+          localStorage.setItem('currentUserId', data.userId);
+          localStorage.setItem('username', data.username);
+          onLogin({ name: data.username, farmName, email, id: data.userId });
+        }
+      } else {
+        setMessage({ text: data.error || 'Operation failed', type: 'error' });
+      }
+    } catch (err) {
+      setMessage({ text: 'Cannot connect to Suk_admin server', type: 'error' });
     }
   };
 
@@ -50,88 +82,42 @@ export function LoginView({ onLogin }: LoginViewProps) {
           Your AI Precision Agronomist
         </p>
 
+        {message.text && (
+          <p style={{ color: message.type === 'error' ? '#ef4444' : '#10b981', fontSize: '0.85rem', marginBottom: '1rem', fontWeight: 600 }}>
+            {message.text}
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-neutral)', marginBottom: '0.25rem' }}>YOUR NAME</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Alex Rivera"
-              required
-              style={{
-                width: '100%', padding: '0.75rem 1rem',
-                backgroundColor: 'var(--color-background)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.9rem', color: 'var(--color-neutral)'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-neutral)', marginBottom: '0.25rem' }}>FARM NAME</label>
-            <input
-              type="text"
-              value={farmName}
-              onChange={(e) => setFarmName(e.target.value)}
-              placeholder="e.g. Salinas Valley"
-              required
-              style={{
-                width: '100%', padding: '0.75rem 1rem',
-                backgroundColor: 'var(--color-background)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.9rem', color: 'var(--color-neutral)'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-neutral)', marginBottom: '0.25rem' }}>EMAIL ADDRESS</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="farmer@salinas.farm"
-              required
-              style={{
-                width: '100%', padding: '0.75rem 1rem',
-                backgroundColor: 'var(--color-background)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.9rem', color: 'var(--color-neutral)'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-neutral)', marginBottom: '0.25rem' }}>PASSWORD</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              style={{
-                width: '100%', padding: '0.75rem 1rem',
-                backgroundColor: 'var(--color-background)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.9rem', color: 'var(--color-neutral)'
-              }}
-            />
-          </div>
+          {isRegistering && (
+            <>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" required style={inputStyle} />
+              <input type="text" value={farmName} onChange={(e) => setFarmName(e.target.value)} placeholder="Farm Location" required style={inputStyle} />
+            </>
+          )}
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" required style={inputStyle} />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required style={inputStyle} />
           
-          <button type="submit" style={{
-            backgroundColor: 'var(--color-primary)',
-            color: 'white', border: 'none',
-            padding: '1rem', marginTop: '1rem',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '1rem', fontWeight: 700,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-          }}>
-            Log In
+          <button type="submit" style={buttonStyle}>
+            {isRegistering ? <UserPlus size={18} /> : <LogIn size={18} />}
+            {isRegistering ? 'Register Account' : 'Log In'}
           </button>
         </form>
+
+        <button 
+          onClick={() => setIsRegistering(!isRegistering)}
+          style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
+        >
+          {isRegistering ? 'Already have an account? Log In' : "Don't have an account? Register Now"}
+        </button>
       </div>
     </div>
   );
 }
+
+const inputStyle = { width: '100%', padding: '0.85rem 1rem', backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)', borderRadius: '12px', fontSize: '0.9rem' };
+const buttonStyle = { 
+  backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', padding: '1rem', 
+  marginTop: '1rem', borderRadius: '12px', fontSize: '1rem', fontWeight: 700,
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
+};
