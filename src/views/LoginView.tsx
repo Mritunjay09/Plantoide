@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Leaf, UserPlus, LogIn } from 'lucide-react';
 
+// The Project Satellite: Your live cloud backend
+const API_BASE_URL = "https://plantoide-backend.onrender.com";
+
 export interface UserInfo {
   name: string;
   farmName: string;
@@ -24,14 +27,13 @@ export function LoginView({ onLogin }: LoginViewProps) {
     e.preventDefault();
     setMessage({ text: '', type: '' });
 
-    // Determine which endpoint to hit based on mode
     const endpoint = isRegistering ? '/api/users/register' : '/api/users/login';
     const payload = isRegistering 
       ? { username: name, email, password, farmLocation: farmName } 
       : { email, password };
 
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -42,7 +44,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
       if (response.ok) {
         if (isRegistering) {
           setMessage({ text: 'Registration successful! Please Log In.', type: 'success' });
-          setIsRegistering(false); // Switch to login mode automatically
+          setIsRegistering(false);
         } else {
           localStorage.setItem('currentUserId', data.userId);
           localStorage.setItem('username', data.username);
@@ -52,34 +54,19 @@ export function LoginView({ onLogin }: LoginViewProps) {
         setMessage({ text: data.error || 'Operation failed', type: 'error' });
       }
     } catch (err) {
-      setMessage({ text: 'Cannot connect to Suk_admin server', type: 'error' });
+      setMessage({ text: 'Cloud connection error. Ensure you have internet access.', type: 'error' });
     }
   };
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100%',
-      backgroundColor: 'var(--color-surface)',
-      position: 'relative'
-    }}>
-      <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: '2rem'
-      }}>
-        <div style={{
-          backgroundColor: 'var(--color-primary)',
-          borderRadius: '50%',
-          width: '80px', height: '80px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: '1.5rem',
-          boxShadow: '0 8px 32px rgba(0, 58, 153, 0.4)'
-        }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'var(--color-surface)', position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={{ backgroundColor: 'var(--color-primary)', borderRadius: '50%', width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', boxShadow: '0 8px 32px rgba(0, 58, 153, 0.4)' }}>
           <Leaf size={40} color="white" />
         </div>
         <h1 style={{ fontSize: '2rem', margin: '0 0 0.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>Plantoide</h1>
         <p style={{ color: 'var(--color-text-light)', fontSize: '0.9rem', marginBottom: '2.5rem', textAlign: 'center' }}>
-          Your AI Precision Agronomist
+          8th Sem Major Project: AI Precision Agronomist
         </p>
 
         {message.text && (
@@ -104,10 +91,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
           </button>
         </form>
 
-        <button 
-          onClick={() => setIsRegistering(!isRegistering)}
-          style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
-        >
+        <button onClick={() => setIsRegistering(!isRegistering)} style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}>
           {isRegistering ? 'Already have an account? Log In' : "Don't have an account? Register Now"}
         </button>
       </div>
@@ -116,8 +100,4 @@ export function LoginView({ onLogin }: LoginViewProps) {
 }
 
 const inputStyle = { width: '100%', padding: '0.85rem 1rem', backgroundColor: 'var(--color-background)', border: '1px solid var(--color-border)', borderRadius: '12px', fontSize: '0.9rem' };
-const buttonStyle = { 
-  backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', padding: '1rem', 
-  marginTop: '1rem', borderRadius: '12px', fontSize: '1rem', fontWeight: 700,
-  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
-};
+const buttonStyle = { backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', padding: '1rem', marginTop: '1rem', borderRadius: '12px', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' };
