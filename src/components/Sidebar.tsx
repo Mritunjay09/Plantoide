@@ -1,6 +1,6 @@
 import {
   X, User, Settings, Bell, Sprout, BarChart2,
-  Camera, LogOut, ChevronRight, Leaf, Shield, LayoutDashboard, BarChart3, Package, Clock
+  Camera, LogOut, ChevronRight, Leaf, Shield, LayoutDashboard, BarChart3, Package, Clock, HelpCircle
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -10,6 +10,7 @@ interface SidebarProps {
   onNavigate: (tab: 'home' | 'inventory' | 'analytics' | 'scheduler') => void;
 }
 
+// Added a safety check to menu items
 const menuItems: { icon: any, label: string, tab: 'home' | 'inventory' | 'analytics' | 'scheduler' }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', tab: 'home' },
   { icon: BarChart3, label: 'Crop Analysis', tab: 'analytics' },
@@ -18,19 +19,10 @@ const menuItems: { icon: any, label: string, tab: 'home' | 'inventory' | 'analyt
 ];
 
 export function Sidebar({ isOpen, onClose, onLogout, onNavigate }: SidebarProps) {
-  let name = 'Alex Rivera';
-  let email = 'alex.rivera@salinas.farm';
-  let farmName = 'Salinas Valley Farm';
-
-  try {
-    const userStr = localStorage.getItem('userInfo');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      if (user.name) name = user.name;
-      if (user.email) email = user.email;
-      if (user.farmName) farmName = user.farmName;
-    }
-  } catch(e) {}
+  // Use data from LoginView localStorage keys
+  const name = localStorage.getItem('username') || 'Suksham Gupta';
+  const email = localStorage.getItem('userEmail') || 'farmer@plantoide.ai';
+  const farmName = localStorage.getItem('farmName') || 'Plantoide Research Farm';
 
   return (
     <>
@@ -73,12 +65,12 @@ export function Sidebar({ isOpen, onClose, onLogout, onNavigate }: SidebarProps)
               position: 'absolute', top: '1.25rem', right: '1.25rem',
               color: 'rgba(255,255,255,0.7)',
               padding: '4px',
+              background: 'none', border: 'none'
             }}
           >
             <X size={22} />
           </button>
 
-          {/* Avatar */}
           <div style={{
             width: '64px', height: '64px',
             borderRadius: '50%',
@@ -97,7 +89,6 @@ export function Sidebar({ isOpen, onClose, onLogout, onNavigate }: SidebarProps)
             {email}
           </p>
 
-          {/* Farm tag */}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
             backgroundColor: 'rgba(255,255,255,0.15)',
@@ -124,10 +115,10 @@ export function Sidebar({ isOpen, onClose, onLogout, onNavigate }: SidebarProps)
             { value: '84ac', label: 'Farm' },
           ].map(({ value, label }) => (
             <div key={label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--color-primary)' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>
                 {value}
               </div>
-              <div style={{ fontSize: '0.625rem', fontWeight: 600, letterSpacing: '0.05em', color: 'var(--color-text-light)', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>
                 {label}
               </div>
             </div>
@@ -136,40 +127,43 @@ export function Sidebar({ isOpen, onClose, onLogout, onNavigate }: SidebarProps)
 
         {/* Menu Items */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0.75rem 0' }}>
-          {menuItems.map((item, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                onNavigate(item.tab);
-                onClose();
-              }}
-              style={{
-                width: '100%',
-                display: 'flex', alignItems: 'center',
-                padding: '0.875rem 1.5rem',
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: 'var(--color-neutral)',
-                textAlign: 'left',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <item.icon size={20} color="var(--color-text-light)" style={{ marginRight: '1rem' }} />
-              <div style={{ flex: 1, fontSize: '1rem', fontWeight: 600 }}>{item.label}</div>
-              <ChevronRight size={18} color="var(--color-border)" />
-            </button>
-          ))}
+          {menuItems.map((item, i) => {
+            // Defensive check: if icon is missing, use HelpCircle instead of crashing
+            const IconComponent = item?.icon || HelpCircle;
+            return (
+              <button
+                key={i}
+                onClick={() => {
+                  onNavigate(item.tab);
+                  onClose();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex', alignItems: 'center',
+                  padding: '0.875rem 1.5rem',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: 'var(--color-neutral)',
+                  textAlign: 'left',
+                }}
+              >
+                <IconComponent size={20} color="var(--color-text-light)" style={{ marginRight: '1rem' }} />
+                <div style={{ flex: 1, fontSize: '1rem', fontWeight: 600 }}>{item.label}</div>
+                <ChevronRight size={18} color="var(--color-border)" />
+              </button>
+            );
+          })}
         </nav>
 
         {/* Sign Out */}
-        <div style={{ padding: '1rem 1.5rem 2rem', borderTop: '1px solid var(--color-border)' }}>
+        <div style={{ marginTop: 'auto', padding: '1rem 1.5rem 2rem', borderTop: '1px solid var(--color-border)' }}>
           <button 
             onClick={onLogout}
             style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem',
             padding: '0.875rem 1rem',
             backgroundColor: 'rgba(239, 68, 68, 0.06)',
-            borderRadius: 'var(--radius-md)',
+            borderRadius: '12px',
             color: '#EF4444', fontWeight: 600,
             border: 'none', cursor: 'pointer',
           }}>
