@@ -19,15 +19,15 @@ export function SchedulerView() {
           ...p,
           lastWatered: new Date(p.lastWatered)
         }));
-      } catch (e) { return []; }
+      } catch (e) { return [e]; }
     }
     return [];
   });
-  
+
   useEffect(() => {
     localStorage.setItem('schedulerPlants', JSON.stringify(plants));
   }, [plants]);
-  
+
   const [notifications, setNotifications] = useState<string[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -86,7 +86,7 @@ export function SchedulerView() {
           </p>
           <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Scheduler</h2>
         </div>
-        <button 
+        <button
           onClick={() => setShowAddForm(true)}
           style={{
           backgroundColor: 'var(--color-primary)',
@@ -120,9 +120,9 @@ export function SchedulerView() {
           <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--color-neutral)' }}>Plant Name</label>
-              <input 
-                type="text" 
-                value={newName} 
+              <input
+                type="text"
+                value={newName}
                 onChange={e => setNewName(e.target.value)}
                 placeholder="e.g. Tomato"
                 required
@@ -131,9 +131,9 @@ export function SchedulerView() {
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--color-neutral)' }}>Last Watered Time</label>
-              <input 
-                type="datetime-local" 
-                value={newLastWatered} 
+              <input
+                type="datetime-local"
+                value={newLastWatered}
                 onChange={e => setNewLastWatered(e.target.value)}
                 required
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.9rem' }}
@@ -141,10 +141,10 @@ export function SchedulerView() {
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--color-neutral)' }}>Hours Before Next Water</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 min="1"
-                value={newInterval} 
+                value={newInterval}
                 onChange={e => setNewInterval(e.target.value)}
                 required
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.9rem' }}
@@ -214,10 +214,10 @@ export function SchedulerView() {
                   </span>
                </div>
                <div style={{ height: '8px', backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
-                 <div style={{ 
-                   width: `${boundedProgress * 100}%`, 
-                   height: '100%', 
-                   backgroundColor: isUrgent ? '#EF4444' : 'var(--color-primary)', 
+                 <div style={{
+                   width: `${boundedProgress * 100}%`,
+                   height: '100%',
+                   backgroundColor: isUrgent ? '#EF4444' : 'var(--color-primary)',
                    borderRadius: '4px',
                    transition: 'width 0.5s ease-out, background-color 0.3s'
                  }} />
