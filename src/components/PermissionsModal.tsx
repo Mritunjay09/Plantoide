@@ -1,112 +1,93 @@
-import { useState } from 'react';
-import { MapPin, Camera, Bell, HardDrive } from 'lucide-react';
+import React, { useState } from 'react';
+import { Camera as CapCamera } from '@capacitor/camera';
+import { Geolocation } from '@capacitor/geolocation';
+import { MapPin, Camera, Shield, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 
 interface PermissionsModalProps {
   onComplete: () => void;
-  onLocationGranted?: (coord: {lat: number, lon: number}) => void;
+  onLocationGranted: (coords: { lat: number, lon: number }) => void;
 }
 
 export function PermissionsModal({ onComplete, onLocationGranted }: PermissionsModalProps) {
   const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const permissionsList = [
-    { id: 'location', icon: MapPin, title: 'Location Access', desc: 'Used for live weather data and localized field alerts.' },
-    { id: 'camera', icon: Camera, title: 'Camera Access', desc: 'Used for AI crop diagnosis and disease detection.' },
-    { id: 'notifications', icon: Bell, title: 'Notifications', desc: 'Used to alert you when watering is required.' },
-    { id: 'storage', icon: HardDrive, title: 'Storage Access', desc: 'Used to save your farm images globally per session.' },
-  ];
-
-  const handleGrant = () => {
-    if (permissionsList[step].id === 'location') {
-      if (navigator.geolocation) {
-         navigator.geolocation.getCurrentPosition(
-           (pos) => {
-             onLocationGranted?.({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-             nextStep();
-           },
-           () => {
-             // on error, still continue
-             nextStep();
-           }
-         );
+  const handleAllowLocation = async () => {
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const status = await Geolocation.requestPermissions();
+      if (status.location === 'granted') {
+        const coordinates = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 10000 
+        });
+        onLocationGranted({ lat: coordinates.coords.latitude, lon: coordinates.coords.longitude });
+        setStep(1); 
       } else {
-        nextStep();
+        setErrorMsg("Permission denied by user.");
       }
-    } else if (permissionsList[step].id === 'camera' || permissionsList[step].id === 'notifications') {
-       // We mock requesting or delay for real APIs
-       setTimeout(() => nextStep(), 500);
-    } else {
-       setTimeout(() => nextStep(), 500);
+    } catch (e) {
+      setErrorMsg("GPS is off. Please turn on 'Location' in your phone settings and retry.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const nextStep = () => {
-    if (step < permissionsList.length - 1) {
-      setStep(s => s + 1);
-    } else {
-      onComplete();
-    }
+  const handleAllowCamera = async () => {
+    setLoading(true);
+    try {
+      const status = await CapCamera.requestPermissions();
+      if (status.camera === 'granted') setStep(2);
+    } catch (e) { setStep(2); } 
+    finally { setLoading(false); }
   };
 
-  const currentPerm = permissionsList[step];
-  const Icon = currentPerm.icon;
+  const buttonStyle = { width: '100%', padding: '1rem', backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: '0.2s' };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      backdropFilter: 'blur(8px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '1.5rem',
-      zIndex: 9999
-    }}>
-      <div style={{
-        backgroundColor: 'var(--color-surface)',
-        borderRadius: '24px',
-        padding: '2rem',
-        width: '100%',
-        maxWidth: '340px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        textAlign: 'center'
-      }}>
-        <div style={{
-          backgroundColor: 'rgba(0, 35, 102, 0.08)',
-          width: '64px', height: '64px',
-          borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: '1.25rem'
-        }}>
-          <Icon size={32} color="var(--color-primary)" />
-        </div>
-        <h2 style={{ fontSize: '1.25rem', margin: '0 0 0.5rem', fontWeight: 800 }}>{currentPerm.title}</h2>
-        <p style={{ color: 'var(--color-text-light)', fontSize: '0.875rem', marginBottom: '2rem', lineHeight: 1.5 }}>
-          {currentPerm.desc}
-        </p>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 999, backgroundColor: 'white', display: 'flex', flexDirection: 'column', padding: '2rem' }}>
+      <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`}</style>
+      
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+        {step === 0 && (
+          <div className="animate-in">
+            <div style={{ width: '80px', height: '80px', backgroundColor: '#eff6ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', margin: '0 auto' }}>
+              {loading ? <Loader2 size={40} color="#3b82f6" className="spin" /> : <MapPin size={40} color="#3b82f6" />}
+            </div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Location Access</h2>
+            <p style={{ color: '#64748b', margin: '1rem 0 2rem' }}>Plantoide uses GPS to provide localized soil data and weather alerts.</p>
+            {errorMsg && <div style={{ color: '#ef4444', marginBottom: '1.5rem', fontSize: '0.85rem', display: 'flex', gap: '5px', alignItems: 'center' }}><AlertCircle size={14}/>{errorMsg}</div>}
+            <button onClick={handleAllowLocation} disabled={loading} style={{ ...buttonStyle, opacity: loading ? 0.7 : 1 }}>
+              {loading ? "Searching GPS..." : "Allow Location Access"} {!loading && <ArrowRight size={18} />}
+            </button>
+          </div>
+        )}
 
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <button onClick={handleGrant} style={{
-            backgroundColor: 'var(--color-primary)', color: 'white',
-            padding: '1rem', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 700
-          }}>
-            Allow Access
-          </button>
-          <button onClick={nextStep} style={{
-            backgroundColor: 'transparent', color: 'var(--color-text-light)',
-            padding: '1rem', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-            border: '1px solid var(--color-border)'
-          }}>
-            Skip for now
-          </button>
-        </div>
+        {step === 1 && (
+          <div className="animate-in">
+            <div style={{ width: '80px', height: '80px', backgroundColor: '#ecfdf5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', margin: '0 auto' }}>
+              {loading ? <Loader2 size={40} color="#10b981" className="spin" /> : <Camera size={40} color="#10b981" />}
+            </div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Camera Access</h2>
+            <p style={{ color: '#64748b', margin: '1rem 0 2rem' }}>Required for the AI model to analyze plant health via live camera feed.</p>
+            <button onClick={handleAllowCamera} disabled={loading} style={{ ...buttonStyle, backgroundColor: '#10b981' }}>
+              {loading ? "Preparing Lens..." : "Allow Camera Access"}
+            </button>
+          </div>
+        )}
 
-        <div style={{ display: 'flex', gap: '6px', marginTop: '1.5rem' }}>
-          {permissionsList.map((_, i) => (
-             <div key={i} style={{
-               width: '8px', height: '8px', borderRadius: '50%',
-               backgroundColor: i === step ? 'var(--color-primary)' : 'var(--color-border)'
-             }} />
-          ))}
-        </div>
+        {step === 2 && (
+          <div className="animate-in">
+            <div style={{ width: '80px', height: '80px', backgroundColor: '#f5f3ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', margin: '0 auto' }}>
+              <Shield size={40} color="#8b5cf6" />
+            </div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Setup Complete</h2>
+            <p style={{ color: '#64748b', margin: '1rem 0 2rem' }}>Your Plantoide profile is synced and ready for precision farming.</p>
+            <button onClick={onComplete} style={{ ...buttonStyle, backgroundColor: 'black' }}>Enter Dashboard</button>
+          </div>
+        )}
       </div>
     </div>
   );
