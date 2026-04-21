@@ -7,35 +7,33 @@ import { AnalyticsView } from './views/AnalyticsView';
 import { CatalogView } from './views/CatalogView';
 import { DiagnosisView } from './views/DiagnosisView';
 import { SchedulerView } from './views/SchedulerView';
-
 import { LoginView, type UserInfo } from './views/LoginView';
 import { PermissionsModal } from './components/PermissionsModal';
 
-function AppContent() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('userInfo'));
+export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('username'));
   const [showPermissions, setShowPermissions] = useState(() => {
-    return !!localStorage.getItem('userInfo') && !localStorage.getItem('coords');
+    return !!localStorage.getItem('username') && !localStorage.getItem('coords');
   });
-  const [showHint, setShowHint] = useState(false);
   
+  const [showHint, setShowHint] = useState(false);
   const [currentTab, setCurrentTab] = useState<'home' | 'inventory' | 'analytics' | 'scheduler'>('home');
   const [isDiagnosisOpen, setIsDiagnosisOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // We expose location by storing it in localStorage so WeatherWidget can read it.
   const handleLocation = (coords: {lat: number, lon: number}) => {
     localStorage.setItem('coords', JSON.stringify(coords));
   };
 
   const handleLogin = (info: UserInfo) => {
-    localStorage.setItem('userInfo', JSON.stringify(info));
     setIsAuthenticated(true);
-    setShowPermissions(true); // Ask for permissions immediately after login
+    setShowPermissions(true); 
   };
 
-  const handlePermissionsComplete = () => {
-    setShowPermissions(false);
-    setShowHint(true); // Show hints after permissions
+  const handleLogout = () => {
+    localStorage.clear();
+    setIsAuthenticated(false);
+    setCurrentTab('home');
   };
 
   if (!isAuthenticated) {
@@ -46,20 +44,8 @@ function AppContent() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', overflow: 'hidden' }}>
       <TopBar onMenuClick={() => setIsSidebarOpen(true)} />
 
-      <main style={{
-        flex: 1,
-        backgroundColor: 'var(--color-background)',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        WebkitOverflowScrolling: 'touch',
-        paddingBottom: 'var(--bottom-nav-height)',
-      }}>
-        {currentTab === 'home' && (
-          <HomeView
-            onOpenDiagnosis={() => setIsDiagnosisOpen(true)}
-            onNavigate={setCurrentTab}
-          />
-        )}
+      <main style={{ flex: 1, backgroundColor: 'white', paddingBottom: '70px', overflowY: 'auto' }}>
+        {currentTab === 'home' && <HomeView onOpenDiagnosis={() => setIsDiagnosisOpen(true)} onNavigate={setCurrentTab} />}
         {currentTab === 'analytics' && <AnalyticsView />}
         {currentTab === 'inventory' && <CatalogView />}
         {currentTab === 'scheduler' && <SchedulerView />}
@@ -67,59 +53,31 @@ function AppContent() {
 
       <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
 
-      {/* Sidebar draws over everything inside the phone */}
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={() => { localStorage.removeItem('userInfo'); setIsAuthenticated(false); }} onNavigate={setCurrentTab} />
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        onLogout={handleLogout} 
+        onNavigate={setCurrentTab} 
+      />
 
-      {/* Camera fullscreen — sits outside main scroll, over everything */}
       {isDiagnosisOpen && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 100 }}>
           <DiagnosisView onClose={() => setIsDiagnosisOpen(false)} />
         </div>
       )}
 
-      {/* Permissions Modal */}
       {showPermissions && (
-        <PermissionsModal onComplete={handlePermissionsComplete} onLocationGranted={handleLocation} />
+        <PermissionsModal onComplete={() => { setShowPermissions(false); setShowHint(true); }} onLocationGranted={handleLocation} />
       )}
 
-      {/* Intro Hint Overlay */}
-      {showHint && !showPermissions && (
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 90,
-          backgroundColor: 'rgba(0,0,0,0.6)',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'flex-end',
-          paddingBottom: '120px'
-        }}>
-          <div style={{
-            backgroundColor: 'var(--color-surface)',
-            padding: '1.5rem', borderRadius: '16px',
-            width: '80%', textAlign: 'center',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-            animation: 'slideUp 0.3s ease'
-          }}>
-            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 800 }}>Welcome to Plantoide!</h3>
-            <p style={{ margin: '0 0 1.25rem', fontSize: '0.85rem', color: 'var(--color-text-light)' }}>
-              Use the bottom navigation bar to manage your inventory, analyze data, and schedule tasks.
-            </p>
-            <button onClick={() => setShowHint(false)} style={{
-              width: '100%', padding: '0.8rem',
-              backgroundColor: 'var(--color-primary)', color: 'white',
-              border: 'none', borderRadius: '8px', fontWeight: 700
-            }}>
-              Got it!
-            </button>
+      {showHint && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 90, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '20px', width: '85%', textAlign: 'center' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Welcome!</h3>
+            <button onClick={() => setShowHint(false)} style={{ width: '100%', padding: '0.8rem', backgroundColor: '#003a99', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700 }}>Start Farming</button>
           </div>
         </div>
       )}
     </div>
   );
 }
-
-function App() {
-  return (
-    <AppContent />
-  );
-}
-
-export default App;
