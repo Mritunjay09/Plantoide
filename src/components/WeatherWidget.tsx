@@ -8,7 +8,7 @@ export function WeatherWidget() {
     try {
       const snap = localStorage.getItem('weatherSnapshot');
       if (snap) return JSON.parse(snap);
-    } catch(e) {}
+    } catch { /* ignore parse error */ }
     return { temp: 24, humidity: 42, wind: 12, precip: 0, locName: 'Salinas Valley', isDay: 1, cloudCover: 0 };
   });
 
@@ -18,7 +18,7 @@ export function WeatherWidget() {
       const stored = localStorage.getItem('coords');
       let lat = 36.6777;
       let lon = -121.6555;
-      let pName = localStorage.getItem('farmName') || 'Research Farm';
+      const pName = localStorage.getItem('farmName') || 'Research Farm';
       
       if (stored) {
         const coords = JSON.parse(stored);

@@ -13,7 +13,7 @@ export function CatalogView() {
   const [items, setItems] = useState<InventoryItem[]>(() => {
     const saved = localStorage.getItem('inventoryItems');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { return []; }
+      try { return JSON.parse(saved); } catch { return []; }
     }
     return [];
   });

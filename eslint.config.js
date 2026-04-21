@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // Ignore build outputs and external environments
+  globalIgnores(['dist', 'android', '.venv', 'weed-detection-backend']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

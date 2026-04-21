@@ -15,6 +15,7 @@ export function SchedulerView() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return parsed.map((p: any) => ({
           ...p,
           lastWatered: new Date(p.lastWatered)

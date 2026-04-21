@@ -9,7 +9,7 @@ interface DiagnosisViewProps {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const API_BASE_URL = 'https://plantoide-backend.onrender.com';
+const API_BASE_URL = '';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ function paintDetections(
   const { scale, ox, oy } = coverTransform(canvas.width, canvas.height, videoW, videoH);
 
   for (const det of dets) {
-    const ok    = det.label !== 'Unidentified';
+    const ok = det.label !== 'Unidentified';
     const color = ok ? '#22c55e' : '#f59e0b';
     const { x1, y1, x2, y2 } = det.bbox;
 
@@ -56,17 +56,17 @@ function paintDetections(
     // Corner accents
     ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.moveTo(bx,      by + cs);   ctx.lineTo(bx, by);           ctx.lineTo(bx + cs,      by);
-    ctx.moveTo(bx+bw-cs, by);       ctx.lineTo(bx+bw, by);        ctx.lineTo(bx+bw,        by+cs);
-    ctx.moveTo(bx+bw,   by+bh-cs); ctx.lineTo(bx+bw, by+bh);    ctx.lineTo(bx+bw-cs,     by+bh);
-    ctx.moveTo(bx+cs,   by+bh);    ctx.lineTo(bx,    by+bh);     ctx.lineTo(bx,           by+bh-cs);
+    ctx.moveTo(bx, by + cs); ctx.lineTo(bx, by); ctx.lineTo(bx + cs, by);
+    ctx.moveTo(bx + bw - cs, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + cs);
+    ctx.moveTo(bx + bw, by + bh - cs); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw - cs, by + bh);
+    ctx.moveTo(bx + cs, by + bh); ctx.lineTo(bx, by + bh); ctx.lineTo(bx, by + bh - cs);
     ctx.stroke();
 
     // Label chip
     const txt = `${det.label}  ${(det.confidence * 100).toFixed(0)}%`;
     ctx.font = 'bold 12px "Public Sans", sans-serif';
-    const tw   = ctx.measureText(txt).width + 12;
-    const cy   = by > 28 ? by - 24 : by + bh + 4;
+    const tw = ctx.measureText(txt).width + 12;
+    const cy = by > 28 ? by - 24 : by + bh + 4;
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.roundRect(bx, cy, tw, 22, 4);
@@ -79,27 +79,29 @@ function paintDetections(
 // ─── Component ────────────────────────────────────────────────────────────────
 export function DiagnosisView({ onClose }: DiagnosisViewProps) {
   // DOM refs
-  const videoRef   = useRef<HTMLVideoElement>(null);
-  const snapRef    = useRef<HTMLCanvasElement>(null); // hidden – captures frame
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const snapRef = useRef<HTMLCanvasElement>(null); // hidden – captures frame
   const overlayRef = useRef<HTMLCanvasElement>(null); // visible – draws boxes
-  const streamRef  = useRef<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   // Guard: prevents two inference calls running at once
-  const busyRef    = useRef(false);
+  const busyRef = useRef(false);
   // Tracks mount state so async callbacks don't call setState after unmount
   const mountedRef = useRef(true);
   // Latest detections stored in a ref for the ResizeObserver repaint (avoids stale closure)
-  const detsRef    = useRef<Detection[]>([]);
+  const detsRef = useRef<Detection[]>([]);
 
   const [modelReady, setModelReady] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
-  const [scanning,   setScanning]   = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [detections, setDetections] = useState<Detection[]>([]);
 
   const userId = localStorage.getItem('currentUserId') ?? 'guest_user';
 
   // Keep detsRef in sync without triggering extra re-renders
-  detsRef.current = detections;
+  useEffect(() => {
+    detsRef.current = detections;
+  }, [detections]);
 
   // ── Mount / unmount ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -125,7 +127,7 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
         const vid = videoRef.current;
         if (vid) {
           vid.srcObject = stream;
-          vid.onloadedmetadata = () => vid.play().catch(() => {});
+          vid.onloadedmetadata = () => vid.play().catch(() => { });
         }
       })
       .catch(() => alert('Camera error: please grant camera permissions.'));
@@ -142,7 +144,7 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
     if (!el) return;
 
     const ro = new ResizeObserver(() => {
-      el.width  = el.clientWidth;
+      el.width = el.clientWidth;
       el.height = el.clientHeight;
       const vid = videoRef.current;
       if (vid) paintDetections(el, detsRef.current, vid.videoWidth, vid.videoHeight);
@@ -155,8 +157,8 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
   const handleScan = useCallback(async () => {
     if (busyRef.current || !modelReady) return;
 
-    const vid     = videoRef.current;
-    const snap    = snapRef.current;
+    const vid = videoRef.current;
+    const snap = snapRef.current;
     const overlay = overlayRef.current;
     if (!vid || !snap || !overlay || vid.readyState < 2) return;
 
@@ -169,7 +171,7 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
 
     try {
       // Capture the current video frame at full resolution
-      snap.width  = vid.videoWidth;
+      snap.width = vid.videoWidth;
       snap.height = vid.videoHeight;
       snap.getContext('2d')!.drawImage(vid, 0, 0);
 
@@ -188,9 +190,9 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
       busyRef.current = false;
       if (mountedRef.current) setScanning(false);
     }
-  }, [modelReady]);
+  }, [modelReady, saveToBackend]);
 
-  const saveToBackend = (det: Detection) => {
+  const saveToBackend = useCallback((det: Detection) => {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       try {
         await fetch(`${API_BASE_URL}/api/detections`, {
@@ -206,7 +208,7 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
         });
       } catch { /* offline – silently skip */ }
     });
-  };
+  }, [userId]);
 
   // ── Derived state ──────────────────────────────────────────────────────────
   // Button is "ready" (green glow) only when model is loaded and not currently scanning
@@ -298,9 +300,9 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
                 <div key={pos} style={{
                   position: 'absolute', width: '20px', height: '20px',
                   borderColor: 'rgba(255,255,255,0.6)', borderStyle: 'solid', borderWidth: 0,
-                  ...(pos === 'tl' ? { top: 0,    left: 0,  borderTopWidth: 3, borderLeftWidth: 3  } : {}),
-                  ...(pos === 'tr' ? { top: 0,    right: 0, borderTopWidth: 3, borderRightWidth: 3 } : {}),
-                  ...(pos === 'bl' ? { bottom: 0, left: 0,  borderBottomWidth: 3, borderLeftWidth: 3  } : {}),
+                  ...(pos === 'tl' ? { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 } : {}),
+                  ...(pos === 'tr' ? { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 } : {}),
+                  ...(pos === 'bl' ? { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 } : {}),
                   ...(pos === 'br' ? { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 } : {}),
                 }} />
               ))}
@@ -324,10 +326,10 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
               borderRadius: '50%',
               border: '3px solid',
               // Green = ready, grey = loading model or currently scanning
-              borderColor:     btnReady ? '#22c55e' : 'rgba(100,100,100,0.5)',
+              borderColor: btnReady ? '#22c55e' : 'rgba(100,100,100,0.5)',
               backgroundColor: btnReady ? 'rgba(34,197,94,0.2)' : 'rgba(60,60,60,0.2)',
               backdropFilter: 'blur(8px)',
-              boxShadow:  btnReady ? '0 0 20px rgba(34,197,94,0.45)' : 'none',
+              boxShadow: btnReady ? '0 0 20px rgba(34,197,94,0.45)' : 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: btnReady ? 'pointer' : 'default',
               transition: 'border-color 0.3s, background-color 0.3s, box-shadow 0.3s',
@@ -336,11 +338,11 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
             {/* Spinner while scanning, scan icon otherwise */}
             {scanning
               ? <div style={{
-                  width: '28px', height: '28px', borderRadius: '50%',
-                  border: '3px solid rgba(120,120,120,0.5)',
-                  borderTopColor: 'transparent',
-                  animation: 'spin 0.75s linear infinite',
-                }} />
+                width: '28px', height: '28px', borderRadius: '50%',
+                border: '3px solid rgba(120,120,120,0.5)',
+                borderTopColor: 'transparent',
+                animation: 'spin 0.75s linear infinite',
+              }} />
               : <ScanLine size={28} color={btnReady ? '#22c55e' : 'rgba(110,110,110,0.7)'} />
             }
           </button>
@@ -382,7 +384,7 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
           }}>
             {detections.map((det, i) => {
               const ok = det.label !== 'Unidentified';
-              const c  = ok ? '#22c55e' : '#f59e0b';
+              const c = ok ? '#22c55e' : '#f59e0b';
               return (
                 <div key={i} style={{
                   flexShrink: 0,

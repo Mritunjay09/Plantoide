@@ -1,6 +1,6 @@
 import React from 'react';
-import { 
-  X, User, LogOut, ChevronRight, Leaf, LayoutDashboard, BarChart3, Package, Clock, HelpCircle 
+import {
+  X, User, LogOut, ChevronRight, Leaf, LayoutDashboard, Package, Clock, HelpCircle, type LucideIcon
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -10,7 +10,8 @@ interface SidebarProps {
   onNavigate: (tab: 'home' | 'inventory' | 'analytics' | 'scheduler') => void;
 }
 
-const menuItems: { icon: any, label: string, tab: 'home' | 'inventory' | 'analytics' | 'scheduler' }[] = [
+// Added a safety check to menu items
+const menuItems: { icon: LucideIcon, label: string, tab: 'home' | 'inventory' | 'analytics' | 'scheduler' }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', tab: 'home' },
   // { icon: BarChart3, label: 'Crop Analysis', tab: 'analytics' },
   { icon: Package, label: 'Inventory', tab: 'inventory' },
