@@ -9,7 +9,7 @@ export function BottomNav({ currentTab, onTabChange }: BottomNavProps) {
   const tabs = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'inventory', icon: LayoutGrid, label: 'Inventory' },
-    { id: 'analytics', icon: BarChart2, label: 'Analytics' },
+    // { id: 'analytics', icon: BarChart2, label: 'Analytics' },
     { id: 'scheduler', icon: Droplets, label: 'Scheduler' }
   ] as const;
 

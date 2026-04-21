@@ -12,7 +12,7 @@ interface SidebarProps {
 
 const menuItems: { icon: any, label: string, tab: 'home' | 'inventory' | 'analytics' | 'scheduler' }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', tab: 'home' },
-  { icon: BarChart3, label: 'Crop Analysis', tab: 'analytics' },
+  // { icon: BarChart3, label: 'Crop Analysis', tab: 'analytics' },
   { icon: Package, label: 'Inventory', tab: 'inventory' },
   { icon: Clock, label: 'Schedulers', tab: 'scheduler' },
 ];
@@ -61,9 +61,19 @@ export function Sidebar({ isOpen, onClose, onLogout, onNavigate }: SidebarProps)
         </nav>
 
         {/* Sign Out */}
-        <div style={{ marginTop: 'auto', padding: '1rem 1.5rem 2rem', borderTop: '1px solid #f1f5f9' }}>
-          <button onClick={onLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1rem', backgroundColor: '#fef2f2', borderRadius: '12px', color: '#ef4444', fontWeight: 600, border: 'none' }}>
-            <LogOut size={18} /> Sign Out
+        <div style={{ marginTop: 'auto', padding: '1rem 1.5rem 2rem', borderTop: '1px solid var(--color-border)' }}>
+          <button
+            onClick={onLogout}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem',
+              padding: '0.875rem 1rem',
+              backgroundColor: 'rgba(239, 68, 68, 0.06)',
+              borderRadius: '12px',
+              color: '#EF4444', fontWeight: 600,
+              border: 'none', cursor: 'pointer',
+            }}>
+            <LogOut size={18} />
+            Sign Out
           </button>
         </div>
       </aside>
