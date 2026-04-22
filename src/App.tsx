@@ -7,7 +7,7 @@ import { AnalyticsView } from './views/AnalyticsView';
 import { CatalogView } from './views/CatalogView';
 import { DiagnosisView } from './views/DiagnosisView';
 import { SchedulerView } from './views/SchedulerView';
-import { LoginView } from './views/LoginView';
+import { LoginView, type UserInfo } from './views/LoginView';
 import { PermissionsModal } from './components/PermissionsModal';
 
 export default function App() {
@@ -25,7 +25,7 @@ export default function App() {
     localStorage.setItem('coords', JSON.stringify(coords));
   };
 
-  const handleLogin = () => {
+  const handleLogin = (info: UserInfo) => {
     setIsAuthenticated(true);
     setShowPermissions(true); 
   };

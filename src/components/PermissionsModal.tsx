@@ -28,7 +28,7 @@ export function PermissionsModal({ onComplete, onLocationGranted }: PermissionsM
       } else {
         setErrorMsg("Permission denied by user.");
       }
-    } catch {
+    } catch (e) {
       setErrorMsg("GPS is off. Please turn on 'Location' in your phone settings and retry.");
     } finally {
       setLoading(false);
@@ -40,7 +40,7 @@ export function PermissionsModal({ onComplete, onLocationGranted }: PermissionsM
     try {
       const status = await CapCamera.requestPermissions();
       if (status.camera === 'granted') setStep(2);
-    } catch { setStep(2); } 
+    } catch (e) { setStep(2); } 
     finally { setLoading(false); }
   };
 

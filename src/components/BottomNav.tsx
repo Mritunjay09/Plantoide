@@ -1,4 +1,4 @@
-import { Home, LayoutGrid, Droplets } from 'lucide-react';
+import { Home, LayoutGrid, BarChart2, Droplets } from 'lucide-react';
 
 interface BottomNavProps {
   currentTab: 'home' | 'inventory' | 'analytics' | 'scheduler';

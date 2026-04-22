@@ -55,7 +55,7 @@ export function LoginView({ onLogin }: { onLogin: (info: UserInfo) => void }) {
       } else {
         setMessage({ text: data.error || 'Operation failed', type: 'error' });
       }
-    } catch {
+    } catch (err) {
       setMessage({ text: 'Cloud connection error. Ensure you have internet access.', type: 'error' });
     } finally {
       setIsLoading(false);
