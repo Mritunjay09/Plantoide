@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Leaf, ScanLine, Video, X } from 'lucide-react';
+import {
+  AlertTriangle, Leaf, ScanLine, Video, X, ChevronDown,
+  Info, MapPin, Shield, CheckCircle2, Sprout, FlaskConical
+} from 'lucide-react';
 import type { Detection } from '../lib/yoloInference';
 import { DISPLAY_THRESHOLD, loadModel, runYOLO } from '../lib/yoloInference';
+import { getWeedInfo, RISK_META, type WeedInfo } from '../lib/weedDatabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DiagnosisViewProps { onClose: () => void; }
@@ -85,6 +89,177 @@ function paintBoxes(
   }
 }
 
+// ─── Weed Info Panel ──────────────────────────────────────────────────────────
+function WeedInfoPanel({ info, det, onClose }: { info: WeedInfo; det: Detection; onClose: () => void }) {
+  const risk = RISK_META[info.riskLevel];
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+    }}>
+      {/* backdrop */}
+      <div
+        onClick={onClose}
+        style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+      />
+
+      {/* Sheet */}
+      <div style={{
+        position: 'relative',
+        backgroundColor: '#0d0d0d',
+        borderRadius: '24px 24px 0 0',
+        border: '1px solid rgba(255,255,255,0.1)',
+        padding: '0 0 calc(env(safe-area-inset-bottom) + 1.5rem)',
+        maxHeight: '82vh',
+        overflowY: 'auto',
+        animation: 'slideUp 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)',
+      }}>
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '0.75rem 0 0.5rem' }}>
+          <div style={{ width: '40px', height: '4px', borderRadius: '2px', backgroundColor: 'rgba(255,255,255,0.2)' }} />
+        </div>
+
+        {/* Header */}
+        <div style={{ padding: '0.5rem 1.25rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                <span style={{ fontSize: '1.5rem' }}>{info.icon}</span>
+                <h2 style={{ color: '#fff', fontSize: '1.2rem', margin: 0, fontFamily: 'Manrope, sans-serif' }}>
+                  {info.name}
+                </h2>
+              </div>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.78rem', margin: 0, fontStyle: 'italic' }}>
+                {info.scientificName}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                width: '36px', height: '36px', borderRadius: '50%',
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                border: 'none', color: '#fff', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Risk + Confidence row */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+              backgroundColor: risk.bg,
+              color: risk.color,
+              borderRadius: '100px', padding: '4px 12px',
+              fontSize: '0.72rem', fontWeight: 700,
+              border: `1px solid ${risk.color}40`,
+            }}>
+              <Shield size={11} />
+              {risk.label}
+            </span>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+              backgroundColor: 'rgba(34,197,94,0.1)',
+              color: '#22c55e',
+              borderRadius: '100px', padding: '4px 12px',
+              fontSize: '0.72rem', fontWeight: 700,
+              border: '1px solid rgba(34,197,94,0.3)',
+            }}>
+              <FlaskConical size={11} />
+              {(det.confidence * 100).toFixed(0)}% confidence
+            </span>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+          {/* Description */}
+          <InfoSection icon={<Info size={15} color="#7dd3fc" />} title="About this plant" color="#7dd3fc">
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.65, margin: 0 }}>
+              {info.description}
+            </p>
+          </InfoSection>
+
+          {/* Visual traits */}
+          <InfoSection icon={<Sprout size={15} color="#86efac" />} title="Visual Identification" color="#86efac">
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.65, margin: 0 }}>
+              {info.visualTraits}
+            </p>
+          </InfoSection>
+
+          {/* Crop Impact */}
+          <InfoSection icon={<AlertTriangle size={15} color={RISK_META[info.riskLevel].color} />} title="Crop Impact" color={RISK_META[info.riskLevel].color}>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.65, margin: 0 }}>
+              {info.cropImpact}
+            </p>
+          </InfoSection>
+
+          {/* Habitat */}
+          <InfoSection icon={<MapPin size={15} color="#f9a8d4" />} title="Typical Habitat" color="#f9a8d4">
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.65, margin: 0 }}>
+              {info.habitat}
+            </p>
+          </InfoSection>
+
+          {/* Control methods */}
+          <InfoSection icon={<CheckCircle2 size={15} color="#a5f3fc" />} title="Control & Management" color="#a5f3fc">
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {info.controlMethods.map((method, i) => (
+                <li key={i} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
+                  <span style={{
+                    flexShrink: 0, marginTop: '2px',
+                    width: '18px', height: '18px', borderRadius: '50%',
+                    backgroundColor: 'rgba(165,243,252,0.12)',
+                    color: '#a5f3fc', fontSize: '0.65rem', fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {i + 1}
+                  </span>
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.82rem', lineHeight: 1.6 }}>
+                    {method}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </InfoSection>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoSection({
+  icon, title, color, children
+}: { icon: React.ReactNode; title: string; color: string; children: React.ReactNode }) {
+  return (
+    <div style={{
+      backgroundColor: 'rgba(255,255,255,0.04)',
+      borderRadius: '12px',
+      border: '1px solid rgba(255,255,255,0.07)',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '0.5rem',
+        padding: '0.6rem 0.9rem',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+      }}>
+        {icon}
+        <span style={{ color, fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          {title}
+        </span>
+      </div>
+      <div style={{ padding: '0.75rem 0.9rem' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export function DiagnosisView({ onClose }: DiagnosisViewProps) {
   // DOM refs
@@ -108,6 +283,7 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
   const [modelError, setModelError] = useState<string | null>(null);
   const [detections, setDetections] = useState<Detection[]>([]);
   const [frozenImg,  setFrozenImg]  = useState<string | null>(null);
+  const [selectedDet, setSelectedDet] = useState<Detection | null>(null);
 
   const userId = localStorage.getItem('currentUserId') ?? 'guest_user';
 
@@ -269,9 +445,25 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
       // Persist top detection to backend
       if (dets.length > 0) saveToBackend(dets[0]);
 
-      // Increment scan counter for HomeView analytics
+      // Increment scan counter
       const prev = parseInt(localStorage.getItem('scan_count') ?? '0', 10);
       localStorage.setItem('scan_count', String(prev + 1));
+
+      // Persist identified weeds to history (max 50, newest first)
+      const identifiedDets = dets.filter(d => d.label !== 'Unidentified');
+      if (identifiedDets.length > 0) {
+        const existing: WeedHistoryEntry[] = JSON.parse(
+          localStorage.getItem('weed_history') ?? '[]'
+        );
+        const newEntries: WeedHistoryEntry[] = identifiedDets.map(d => ({
+          label: d.label,
+          rawLabel: d.rawLabel,
+          confidence: d.confidence,
+          timestamp: Date.now(),
+        }));
+        const merged = [...newEntries, ...existing].slice(0, 50);
+        localStorage.setItem('weed_history', JSON.stringify(merged));
+      }
     } catch (e) {
       console.error('[Scan error]', e);
     } finally {
@@ -283,6 +475,7 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
   const goLive = useCallback(() => {
     setFrozenImg(null);
     setDetections([]);
+    setSelectedDet(null);
     detsRef.current = [];
     overlayRef.current
       ?.getContext('2d')
@@ -463,6 +656,20 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
                 }} />
               ))}
             </div>
+            {/* Hint text */}
+            <div style={{
+              position: 'absolute', bottom: '6rem',
+              left: '50%', transform: 'translateX(-50%)',
+              backgroundColor: 'rgba(0,0,0,0.55)',
+              backdropFilter: 'blur(6px)',
+              borderRadius: '100px',
+              padding: '0.4rem 1rem',
+              whiteSpace: 'nowrap',
+            }}>
+              <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem' }}>
+                Point camera at plants, then tap Scan
+              </span>
+            </div>
           </div>
         )}
 
@@ -554,44 +761,106 @@ export function DiagnosisView({ onClose }: DiagnosisViewProps) {
             </span>
           </div>
         ) : (
-          <div style={{
-            display: 'flex', gap: '0.6rem',
-            overflowX: 'auto', padding: '0.75rem 1rem',
-            scrollbarWidth: 'none',
-          }}>
-            {detections.map((det, i) => {
-              const ok = det.label !== 'Unidentified';
-              const c  = ok ? '#22c55e' : '#f59e0b';
-              return (
-                <div key={i} style={{
-                  flexShrink: 0,
-                  display: 'flex', flexDirection: 'column', gap: '0.2rem',
-                  background: ok ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
-                  border: `1.5px solid ${ok ? 'rgba(34,197,94,0.35)' : 'rgba(245,158,11,0.35)'}`,
-                  borderRadius: '10px',
-                  padding: '0.6rem 0.9rem',
-                  minWidth: '115px',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    {ok ? <Leaf size={12} color={c} /> : <AlertTriangle size={12} color={c} />}
-                    <span style={{ color: c, fontWeight: 700, fontSize: '0.78rem' }}>
-                      {(det.confidence * 100).toFixed(0)}%
+          <>
+            <div style={{
+              padding: '0.6rem 1rem 0.3rem',
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
+            }}>
+              <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.68rem', letterSpacing: '0.07em', textTransform: 'uppercase', fontWeight: 600 }}>
+                {detections.length} Plant{detections.length > 1 ? 's' : ''} detected · tap for details
+              </span>
+              <ChevronDown size={12} color="rgba(255,255,255,0.3)" />
+            </div>
+            <div style={{
+              display: 'flex', gap: '0.6rem',
+              overflowX: 'auto', padding: '0.2rem 1rem 0.6rem',
+              scrollbarWidth: 'none',
+            }}>
+              {detections.map((det, i) => {
+                const ok   = det.label !== 'Unidentified';
+                const c    = ok ? '#22c55e' : '#f59e0b';
+                const info = ok ? getWeedInfo(det.label) : null;
+                const risk = info ? RISK_META[info.riskLevel] : null;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => ok ? setSelectedDet(det) : undefined}
+                    style={{
+                      flexShrink: 0,
+                      display: 'flex', flexDirection: 'column', gap: '0.2rem',
+                      background: ok ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
+                      border: `1.5px solid ${ok ? 'rgba(34,197,94,0.35)' : 'rgba(245,158,11,0.35)'}`,
+                      borderRadius: '12px',
+                      padding: '0.6rem 0.9rem',
+                      minWidth: '130px',
+                      textAlign: 'left',
+                      cursor: ok ? 'pointer' : 'default',
+                      position: 'relative',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      {ok ? <Leaf size={12} color={c} /> : <AlertTriangle size={12} color={c} />}
+                      <span style={{ color: c, fontWeight: 700, fontSize: '0.78rem' }}>
+                        {(det.confidence * 100).toFixed(0)}%
+                      </span>
+                      {risk && (
+                        <span style={{
+                          marginLeft: 'auto', fontSize: '0.6rem', fontWeight: 700,
+                          color: risk.color, letterSpacing: '0.03em',
+                        }}>
+                          {risk.label.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.83rem', lineHeight: 1.25 }}>
+                      {det.label}
                     </span>
-                  </div>
-                  <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.83rem', lineHeight: 1.25 }}>
-                    {det.label}
-                  </span>
-                  {!ok && (
-                    <span style={{ color: 'rgba(255,255,255,0.38)', fontSize: '0.7rem' }}>
-                      ~{det.rawLabel}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                    {ok && info && (
+                      <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.65rem', fontStyle: 'italic' }}>
+                        {info.scientificName}
+                      </span>
+                    )}
+                    {!ok && (
+                      <span style={{ color: 'rgba(255,255,255,0.38)', fontSize: '0.7rem' }}>
+                        ~{det.rawLabel}
+                      </span>
+                    )}
+                    {ok && (
+                      <span style={{
+                        display: 'flex', alignItems: 'center', gap: '0.25rem',
+                        color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', marginTop: '0.15rem',
+                      }}>
+                        <Info size={9} />
+                        Tap for info
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
+
+      {/* ══ WEED INFO BOTTOM SHEET ════════════════════════════════════════════ */}
+      {selectedDet && (() => {
+        const info = getWeedInfo(selectedDet.label);
+        return info ? (
+          <WeedInfoPanel
+            info={info}
+            det={selectedDet}
+            onClose={() => setSelectedDet(null)}
+          />
+        ) : null;
+      })()}
+
+      {/* Slide-up animation */}
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

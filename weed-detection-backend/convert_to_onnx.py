@@ -1,14 +1,3 @@
-"""
-YOLO → ONNX Conversion Script
-================================
-Run this ONCE from the weed-detection-backend/ folder:
-
-    python convert_to_onnx.py
-
-This will export best.pt → best.onnx in this same folder.
-Then copy best.onnx to:  ../public/models/best.onnx
-"""
-
 from pathlib import Path
 from ultralytics import YOLO
 

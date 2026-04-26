@@ -1,18 +1,3 @@
-/**
- * yoloInference.ts
- * ─────────────────
- * On-device YOLO inference using ONNX Runtime Web.
- *
- * Model format (YOLOv8 / YOLO-latest nano, ONNX export):
- *   Input  : [1, 3, 640, 640]  float32  (CHW, normalised 0-1, letterboxed)
- *   Output : [1, 4+nc, 8400]   float32
- *              rows 0-3    → cx, cy, w, h  (in 640-px space)
- *              rows 4-19   → class scores  (nc = 16)
- *
- * Place best.onnx in  public/models/best.onnx
- * WASM files must be in  public/  (copied by setup script)
- */
-
 import * as ort from 'onnxruntime-web';
 
 // ── Class labels (16 classes) ────────────────────────────────────────────────
