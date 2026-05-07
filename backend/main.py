@@ -1,94 +1,94 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
+import psycopg
+import os
+from dotenv import load_dotenv
+import psycopg.errors
+import bcrypt
 
-// Import Models
-const Detection = require('./models/Detection');
-const User = require('./models/User');
+load_dotenv()
+db_url = os.getenv("DB_URL")
 
-const app = express();
-app.use(cors());
-app.use(express.json());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log(' Connected to weed_detection_db'))
-  .catch(err => console.error(' MongoDB connection error:', err));
+def hashed_password(password: str):
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
-// --- DETECTION ROUTES ---
 
-// 1. POST: Save any detection (AI identified or Unrecognized)
-app.post('/api/detections', async (req, res) => {
-  try {
-    const newDetection = new Detection(req.body);
-    const savedDetection = await newDetection.save();
-    res.status(201).json(savedDetection);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to save detection' });
-  }
-});
+def verify_password(password: str, hashed: bytes):
+    return bcrypt.checkpw(password.encode(), hashed)
 
-// 2. GET: Fetch detection history for the dashboard
-app.get('/api/detections', async (req, res) => {
-  try {
-    const detections = await Detection.find().sort({ timestamp: -1 });
-    res.status(200).json(detections);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch data' });
-  }
-});
 
-// 3. PATCH: Manually label an "Unrecognized" plant
-app.patch('/api/detections/:id/manual-label', async (req, res) => {
-  try {
-    const { manualLabelName, status } = req.body;
-    const updatedDetection = await Detection.findByIdAndUpdate(
-      req.params.id,
-      {
-        manualLabelName: manualLabelName,
-        isManuallyLabeled: true,
-        status: status // Allows user to mark it as 'weed' or 'crop'
-      },
-      { new: true }
-    );
-    res.status(200).json(updatedDetection);
-  } catch (error) {
-    res.status(500).json({ message: 'Manual labeling failed', error: error.message });
-  }
-});
+def get_connection():
+    return psycopg.connect(db_url)
 
-// --- USER & AUTH ROUTES [cite: 3, 6] ---
 
-// Register Profile
-app.post('/api/users/register', async (req, res) => {
-  try {
-    const newUser = new User(req.body);
-    await newUser.save();
-    res.status(201).json({ message: "Farmer profile created successfully" });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+def create_table():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+               CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    user_name TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash BYTEA NOT NULL,
+                    farm_name TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                """)
 
-// Login using Login ID (Email)
-app.post('/api/users/login', async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const user = await User.findOne({ email, password });
-    if (user) {
-      res.status(200).json({
-        message: "Login successful",
-        userId: user._id,
-        username: user.username
-      });
-    } else {
-      res.status(401).json({ error: "Invalid Login ID or Password" });
-    }
-  } catch (err) {
-    res.status(500).json({ error: "Server error during login" });
-  }
-});
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(` Server running on port ${PORT}`));
+def create_table_scan():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+               CREATE TABLE IF NOT EXISTS scans (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    scan_data JSONB NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+                );
+                """)
+
+
+def create_user(name, user_name, password, email, farm_name):
+    hashed = hashed_password(password)
+    email = email.strip().lower()
+    user_name = user_name.strip().lower()
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO users (name, user_name, email, farm_name, password_hash)
+                    VALUES (%s, %s, %s, %s, %s) RETURNING id;""",
+                    (name, user_name, email, farm_name, hashed)
+                )
+                return cur.fetchone()[0]
+    except psycopg.errors.UniqueViolation:
+        return "User name or email already exists"
+
+
+def remove_user(user_name):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM users WHERE user_name = %s;",
+                (user_name,)
+            )
+            return "User removed successfully"
+
+
+def authenticate_user(user_name, password):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT password_hash FROM users WHERE user_name = %s;",
+                (user_name,)
+            )
+            result = cur.fetchone()
+
+            if not result:
+                return False
+
+            return verify_password(password, result[0])

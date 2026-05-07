@@ -1,15 +1,14 @@
 databases:
-  - name: plantoide
-    databaseName: plantoide-db
+  - name: plantoide-db
     user: admin
-    plan: free # Free tier: 1 GB storage, expires after 90 days
-    ipAllowList: [] # Allow connections from any IP
+    plan: free
+    ipAllowList: []
 
 services:
   - type: web
     name: plantoide
     runtime: python
-    plan: free # Free tier: 512 MB RAM, spins down after 15 min inactivity
+    plan: free
     buildCommand: "pip install uv && uv sync"
     startCommand: "uv run uvicorn main:app --host 0.0.0.0 --port $PORT"
     envVars:
