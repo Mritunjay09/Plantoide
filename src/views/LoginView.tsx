@@ -22,8 +22,8 @@ export function LoginView({ onLogin }: { onLogin: (info: UserInfo) => void }) {
     setMessage({ text: '', type: '' });
 
     const endpoint = isRegistering ? '/api/users/register' : '/api/users/login';
-    const payload = isRegistering 
-      ? { username: formData.name, email: formData.email, password: formData.pass, farmLocation: formData.farm } 
+    const payload = isRegistering
+      ? { username: formData.name, email: formData.email, password: formData.pass, farmLocation: formData.farm }
       : { email: formData.email, password: formData.pass };
 
     try {
@@ -44,12 +44,12 @@ export function LoginView({ onLogin }: { onLogin: (info: UserInfo) => void }) {
           localStorage.setItem('username', data.username);
           localStorage.setItem('userEmail', formData.email);
           localStorage.setItem('farmName', formData.farm || 'Plantoide Research Farm');
-          
-          onLogin({ 
-            name: data.username, 
-            farmName: formData.farm, 
-            email: formData.email, 
-            id: data.userId 
+
+          onLogin({
+            name: data.username,
+            farmName: formData.farm,
+            email: formData.email,
+            id: data.userId
           });
         }
       } else {
@@ -71,7 +71,7 @@ export function LoginView({ onLogin }: { onLogin: (info: UserInfo) => void }) {
         <Leaf size={32} color="white" />
       </div>
       <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#003a99' }}>Plantoide</h1>
-      <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '2rem' }}>8th Sem: AI Precision Agronomist</p>
+      <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '2rem' }}> AI Precision Agronomist</p>
 
       {message.text && <p style={{ color: message.type === 'error' ? '#ef4444' : '#10b981', fontSize: '0.85rem', marginBottom: '1rem', fontWeight: 600 }}>{message.text}</p>}
 
@@ -84,7 +84,7 @@ export function LoginView({ onLogin }: { onLogin: (info: UserInfo) => void }) {
         )}
         <input type="email" placeholder="Email" required style={inputStyle} onChange={e => setFormData({...formData, email: e.target.value})} />
         <input type="password" placeholder="Password" required style={inputStyle} onChange={e => setFormData({...formData, pass: e.target.value})} />
-        
+
         <button type="submit" disabled={isLoading} style={{ backgroundColor: '#003a99', color: 'white', border: 'none', padding: '1rem', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '1rem', opacity: isLoading ? 0.7 : 1 }}>
           {isLoading ? <Loader2 size={20} className="spin" /> : (isRegistering ? <UserPlus size={18} /> : <LogIn size={18} />)}
           {isLoading ? 'Processing...' : (isRegistering ? 'Register' : 'Sign In')}
